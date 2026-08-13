@@ -575,7 +575,7 @@ function dbDel(id){return new Promise(r=>{if(!db)return r();try{const tx=db.tran
 
 // ===== Storage (GitHub Gist) =====
 var GIST_ID="14afe8ace4d805c1d2c8c7cf3603a1aa";
-var GIST_TOKEN="ghp_".concat("q6QWMeVSISR6Aoxm","IFCGpSpUPCQ9Vd2sUWNw"); // 分段拼接规避 GitHub 密钥扫描；运行时拼接还原为完整 token
+var GIST_TOKEN="__GIST_TOKEN__"; // 占位符：由 GitHub Actions 部署时从仓库 Secrets 注入；本地调试可临时替换为真实 token
 var GIST_FILE="todo.json";
 var GIST_API="https://api.github.com/gists";
 var serverSyncing=false;
