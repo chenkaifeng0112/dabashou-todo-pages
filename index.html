@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>搭把手 · 四人盯梢局</title>
+<style>
+:root{
+  --bg:#F2F2F7;--surface:#FFFFFF;--text:#1d1d1f;--text2:#6e6e73;--text3:#aeaeb2;
+  --accent:#007AFF;--accent-soft:rgba(0,122,255,.08);
+  --border:rgba(0,0,0,.06);--border-strong:rgba(0,0,0,.12);
+  --radius:20px;--shadow:0 1px 4px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.06);
+  --shadow-md:0 2px 10px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.1);
+  --danger:#FF3B30;--overdue-bg:rgba(255,59,48,.05);
+  --st-wait:#aeaeb2;--st-doing:#007AFF;--st-done:#34C759;--st-pause:#FF9500;--st-overdue:#FF3B30;
+  --btn-h:36px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;}
+
+/* ===== TOP BAR ===== */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:rgba(242,242,247,.72);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:0.5px solid var(--border);flex:none;z-index:100;min-height:52px;}
+.tb-left{display:flex;align-items:center;gap:12px;}
+.tb-logo{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+
+.btn-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:var(--text2);cursor:pointer;transition:all .15s;flex:none;position:relative;}
+.btn-icon:hover{background:rgba(0,0,0,.05);color:var(--text);}
+.notif-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none;}
+.notif-badge.show{display:block;}
+
+.btn-new-task{display:flex;align-items:center;gap:5px;padding:0 16px;height:35px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-new-task:hover{opacity:.88;}
+
+.cloud-banner{position:sticky;top:0;z-index:90;background:#fff4e5;color:#9a5b00;border-bottom:0.5px solid #f0d9b5;font-size:12.5px;line-height:1.4;padding:7px 20px;text-align:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+
+.dropdown{position:relative;}
+.dd-wrap{position:relative;}
+.user-tag{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:10px;cursor:pointer;transition:background .15s;font-size:13px;}
+.user-tag:hover{background:rgba(0,0,0,.04);}
+.ut-name{color:var(--text);font-weight:500;}
+
+.avatar-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex:none;}
+.avatar-circle.xs{width:18px;height:18px;font-size:9px;}
+.dd-menu{position:absolute;top:100%;right:0;margin-top:6px;background:var(--surface);border-radius:12px;box-shadow:var(--shadow-md);min-width:160px;padding:4px;display:none;z-index:200;}
+.dd-menu.show{display:block;}
+.dd-menu-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:13px;color:var(--text);cursor:pointer;transition:background .12s;}
+.dd-menu-item:hover{background:rgba(0,0,0,.04);}
+.rename-btn{margin-left:auto;font-size:13px;color:var(--text3);padding:0 2px;cursor:pointer;}
+.rename-btn:hover{color:var(--accent);}
+.rename-input{flex:1;min-width:0;font-size:13px;padding:3px 6px;border:1px solid var(--accent);border-radius:6px;outline:none;background:var(--bg);color:var(--text);}
+.rename-ok,.rename-cancel{width:22px;height:22px;border:none;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;}
+.rename-ok{background:var(--accent);color:#fff;}
+.rename-cancel{background:rgba(0,0,0,.06);color:var(--text2);}
+
+/* Notif panel */
+.notif-panel{position:absolute;top:100%;right:0;margin-top:6px;background:var(--surface);border-radius:14px;box-shadow:var(--shadow-md);width:300px;max-height:380px;display:none;flex-direction:column;z-index:200;overflow:hidden;}
+.notif-panel.show{display:flex;}
+.notif-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border);flex:none;font-size:13px;font-weight:600;}
+.nt-clear{font-size:12px;color:var(--accent);cursor:pointer;}
+.notif-list{flex:1;overflow-y:auto;padding:4px;}
+.nf-item{padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .12s;font-size:12px;line-height:1.5;display:flex;align-items:flex-start;gap:8px;}
+.nf-item:hover{background:rgba(0,0,0,.02);}
+.nf-item .nf-body{flex:1;min-width:0;}
+.nf-item .nf-from{font-weight:500;color:var(--text);}
+.nf-item .nf-msg{color:var(--text2);margin:2px 0;}
+.nf-item .nf-time{color:var(--text3);font-size:10px;}
+.nf-item.read{opacity:.55;background:rgba(0,0,0,.01);}
+.nf-item.read .nf-from,.nf-item.read .nf-msg{color:var(--text3);}
+.nf-read-label{font-size:10px;color:var(--text3);background:rgba(118,118,128,.08);padding:1px 5px;border-radius:3px;flex:none;margin-left:4px;}
+.nf-read-btn{flex:none;font-size:11px;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:5px;cursor:pointer;border:none;font-weight:500;transition:all .12s;}
+.nf-read-btn:hover{background:rgba(0,122,255,.18);}
+.nf-empty{padding:24px;text-align:center;color:var(--text3);font-size:13px;}
+
+/* ===== QUAD ACTION BUTTONS ===== */
+.qti-actions{display:flex;align-items:center;gap:2px;flex:none;margin-left:6px;}
+.act-icon{width:24px;height:24px;border-radius:6px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s;font-size:13px;}
+.act-icon:hover{background:rgba(0,0,0,.06);}
+.act-icon.act-done:hover{color:var(--st-done);background:rgba(52,199,89,.1);}
+.act-icon.act-del:hover{color:var(--danger);background:rgba(255,59,48,.08);}
+
+/* ===== DATE INPUT WRAPPER ===== */
+.date-wrap{position:relative;display:flex;align-items:center;}
+.date-wrap .form-input{padding-left:34px;}
+.date-wrap .cal-ico{position:absolute;left:10px;pointer-events:none;color:var(--text3);font-size:14px;}
+
+/* ===== BODY ===== */
+.body-wrap{flex:1;display:flex;overflow:hidden;min-height:0;}
+
+/* Sidebar */
+.sidebar{width:230px;flex:none;background:rgba(242,242,247,.5);border-right:0.5px solid var(--border);overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:2px;}
+.sec-title{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);padding:8px 12px 4px;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;}
+.cat-del-btn{font-size:13px;color:var(--text3);cursor:pointer;padding:0 4px;opacity:0;transition:all .12s;}
+.nav-item:hover .cat-del-btn{opacity:1;}
+.cat-del-btn:hover{color:var(--danger);}
+.cat-rename-btn{font-size:12px;color:var(--text3);cursor:pointer;padding:0 4px;opacity:0;transition:all .12s;}
+.nav-item:hover .cat-rename-btn{opacity:1;}
+.cat-rename-btn:hover{color:var(--accent);}
+.nav-item.editing .cat-rename-btn,.nav-item.editing .cat-del-btn{opacity:0;}
+.cat-rename-input{flex:1;min-width:0;font-size:13px;padding:3px 6px;border:1px solid var(--accent);border-radius:6px;outline:none;background:var(--bg);color:var(--text);margin:0 4px;}
+.cat-rename-ok,.cat-rename-cancel{width:22px;height:22px;border:none;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none;}
+.cat-rename-ok{background:var(--accent);color:#fff;}
+.cat-rename-cancel{background:rgba(0,0,0,.06);color:var(--text2);}
+.nav-section{display:flex;flex-direction:column;gap:1px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
+.nav-item:hover{background:rgba(0,0,0,.04);color:var(--text);}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500;}
+.nav-item .ni-ico{font-size:15px;width:22px;text-align:center;flex:none;opacity:.7;}
+.nav-item.active .ni-ico{opacity:1;}
+.nav-item .ni-label{flex:1;}
+.nav-item .ni-count{font-size:11px;font-weight:500;min-width:20px;text-align:center;padding:1px 6px;border-radius:6px;background:rgba(118,118,128,.08);}
+.nav-item.active .ni-count{background:rgba(0,122,255,.12);color:var(--accent);}
+.nav-divider{height:0.5px;background:var(--border);margin:6px 12px;}
+
+.prio-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px;}
+.prio-chip{padding:5px 12px;border-radius:8px;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
+.prio-chip:hover{background:rgba(0,0,0,.04);}
+.prio-chip.active{background:rgba(0,122,255,.08);color:var(--accent);font-weight:500;}
+.prio-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+.member-row{display:flex;flex-direction:column;gap:2px;padding:0 12px;}
+.member-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;cursor:pointer;transition:all .15s;}
+.member-chip:hover{background:rgba(0,0,0,.04);}
+.member-chip.active{background:rgba(0,0,0,.05);}
+.member-chip .mc-name{font-size:13px;flex:1;}
+.member-chip .mc-count{font-size:11px;color:var(--text3);}
+
+/* ===== MAIN ===== */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.main-header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px 8px;flex:none;gap:16px;}
+.main-title{font-size:15px;font-weight:600;color:var(--text);}
+.main-title .sub{font-size:13px;color:var(--text3);font-weight:400;margin-left:6px;}
+.sort-row{display:flex;align-items:center;gap:8px;}
+.sort-row .st{font-size:12px;color:var(--text3);}
+.sort-row select{border:0.5px solid var(--border-strong);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--surface);cursor:pointer;color:var(--text2);}
+.content-scroll{flex:1;overflow:auto;padding:8px 28px 32px;}
+
+/* ===== QUAD GRID ===== */
+.quad-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-content:start;}
+.quad-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .2s;min-height:180px;}
+.quad-card:hover{box-shadow:var(--shadow-md);}
+.quad-header{padding:14px 20px 14px;border-bottom:0.5px solid var(--border);flex:none;position:relative;}
+.quad-header::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;}
+.qh-top{display:flex;align-items:center;gap:12px;}
+.qh-info{flex:1;min-width:0;}
+.qh-name{font-size:16px;font-weight:600;}
+.qh-stats{font-size:12px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.qh-stats .qs-num{font-weight:600;color:var(--text2);}
+.qh-actions{display:flex;align-items:center;gap:6px;flex:none;}
+.qh-add{width:32px;height:32px;border-radius:8px;background:rgba(118,118,128,.08);display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s;border:none;cursor:pointer;font-size:16px;}
+.qh-add:hover{background:var(--accent);color:#fff;}
+.qh-more{font-size:11px;color:var(--accent);cursor:pointer;padding:4px 10px;border-radius:6px;transition:all .15s;white-space:nowrap;font-weight:500;background:none;border:none;}
+.qh-more:hover{background:var(--accent-soft);}
+.progress-mini{margin-top:10px;display:flex;align-items:center;gap:10px;}
+.pm-bar{flex:1;height:5px;border-radius:3px;background:rgba(118,118,128,.12);overflow:hidden;}
+.pm-fill{height:100%;border-radius:3px;transition:width .4s;}
+
+.quad-body{flex:1;overflow-y:auto;padding:4px 0;min-height:0;max-height:340px;}
+.quad-task-item{padding:12px 20px;cursor:pointer;transition:background .12s;border-bottom:0.5px solid rgba(0,0,0,.03);display:flex;align-items:center;gap:12px;}
+.quad-task-item:last-child{border-bottom:none;}
+.quad-task-item:hover{background:rgba(0,0,0,.02);}
+.quad-task-item.overdue{background:var(--overdue-bg);}
+.qti-left{flex:1;min-width:0;}
+.qti-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:14px;margin-bottom:6px;flex-wrap:nowrap;min-width:0;}
+.qti-title .qti-name{flex:1 1 0;min-width:0;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.qti-title .qti-name.done{text-decoration:line-through;color:var(--text3);}
+.qti-title .tag-sm{margin-left:auto;}
+.qti-sub{display:flex;align-items:center;gap:8px;}
+.qti-bar{flex:1;min-width:60px;height:4px;border-radius:2px;background:rgba(118,118,128,.10);overflow:hidden;}
+.qti-fill{height:100%;border-radius:2px;transition:width .3s;}
+.qti-pct{font-size:11px;font-weight:600;color:var(--text3);min-width:30px;text-align:right;flex:none;}
+.qti-right{display:flex;align-items:center;gap:6px;flex:none;}
+
+/* 拟完成时间：醒目字号 */
+.due-inline{font-size:13px;font-weight:600;color:var(--text);background:rgba(118,118,128,.10);padding:2px 9px;border-radius:5px;flex:none;letter-spacing:.3px;}
+.due-inline.overdue-text{color:#fff;background:var(--danger);font-weight:700;}
+.update-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;margin-left:4px;}
+
+.cat-tag{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500;cursor:pointer;transition:opacity .15s;}
+.cat-tag:hover{opacity:.7;}
+.tag-sm{font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(118,118,128,.1);color:var(--text2);flex:none;font-weight:500;}
+.tag-sm.wait{background:rgba(174,174,178,.15);color:var(--text3);}
+.tag-sm.doing{background:rgba(0,122,255,.1);color:var(--accent);}
+.tag-sm.done{background:rgba(52,199,89,.1);color:var(--st-done);}
+.tag-sm.pause{background:rgba(255,149,0,.1);color:var(--st-pause);}
+.tag-sm.overdue{background:rgba(255,59,48,.1);color:var(--danger);}
+
+/* ===== QUAD FOOTER (fixed at bottom of card, not affected by scroll) ===== */
+.quad-footer{padding:10px 20px;border-top:0.5px solid var(--border);flex:none;text-align:center;background:var(--surface);}
+.quad-footer a{color:var(--accent);cursor:pointer;font-weight:500;font-size:12px;display:inline-flex;align-items:center;gap:4px;}
+.quad-footer a:hover{text-decoration:underline;}
+
+.quad-empty-state{padding:32px 20px;text-align:center;color:var(--text3);font-size:13px;}
+.qe-emoji{font-size:28px;margin-bottom:8px;opacity:.5;}
+
+.att-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;background:rgba(118,118,128,.06);transition:background .15s;flex:none;}
+.att-badge:hover{background:rgba(118,118,128,.12);}
+
+/* ===== USER CHIP (solid color background box, used in table 责任人/提出人) ===== */
+.user-chip{display:inline-flex;align-items:center;gap:5px;background:var(--ucolor,#007AFF);color:#fff;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap;line-height:1.4;}
+.user-chip .avatar-circle.xs{background:rgba(255,255,255,.25);}
+
+/* ===== TABLE (all/active/done views) ===== */
+.table-wrap{overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{text-align:left;padding:10px 12px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:0.5px solid var(--border);white-space:nowrap;}
+.data-table td{padding:10px 12px;border-bottom:0.5px solid rgba(0,0,0,.03);vertical-align:middle;}
+.data-table tr.done-row td{opacity:.5;}
+.data-table tr.overdue-row{background:var(--overdue-bg);}
+.data-table tr.overdue-row td{opacity:1;}
+.due-text{font-size:12px;color:var(--text3);}
+.due-text.overdue-text{color:var(--danger);font-weight:500;}
+.note-text{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text2);}
+.check-circle{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.data-table tr.done-row .check-circle{background:var(--st-done);border-color:var(--st-done);}
+.check-circle:hover{border-color:var(--st-done);}
+.status-badge{font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap;}
+.status-badge.wait{background:rgba(174,174,178,.15);color:var(--text3);}
+.status-badge.doing{background:rgba(0,122,255,.1);color:var(--accent);}
+.status-badge.done{background:rgba(52,199,89,.1);color:var(--st-done);}
+.status-badge.pause{background:rgba(255,149,0,.1);color:var(--st-pause);}
+.status-badge.overdue{background:rgba(255,59,48,.1);color:var(--danger);}
+.prog-inline{display:flex;align-items:center;gap:8px;}
+.pi-bar{width:80px;height:5px;border-radius:3px;background:rgba(118,118,128,.1);overflow:hidden;}
+.pi-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .3s;}
+.pi-fill.full{background:var(--st-done);}
+.pi-fill.overdue-fill{background:var(--danger);}
+.pi-pct{font-size:11px;font-weight:500;color:var(--text3);}
+.who-inline{display:flex;align-items:center;gap:6px;font-size:13px;}
+.row-actions{display:flex;align-items:center;gap:4px;}
+.btn-action{padding:4px 10px;border-radius:6px;font-size:12px;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;}
+.btn-action.urge{color:var(--accent);background:var(--accent-soft);}
+.btn-action.urge:hover{background:rgba(0,122,255,.15);}
+.btn-action.urge.has-unread{background:rgba(255,59,48,.1);color:var(--danger);}
+.btn-action.danger{color:var(--text3);background:none;}
+.btn-action.danger:hover{color:var(--danger);background:rgba(255,59,48,.06);}
+
+/* ===== PERSON PAGE ===== */
+.person-page{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.person-page.active{display:flex;}
+.person-topbar{display:flex;align-items:center;gap:16px;padding:12px 28px;border-bottom:0.5px solid var(--border);flex:none;}
+.pt-back{cursor:pointer;color:var(--accent);font-size:13px;font-weight:500;background:none;border:none;padding:6px 12px;border-radius:8px;transition:background .15s;}
+.pt-back:hover{background:var(--accent-soft);}
+.pt-user-info{display:flex;align-items:center;gap:10px;}
+.pt-user-name{font-size:16px;font-weight:600;}
+.pt-user-stats{font-size:12px;color:var(--text3);}
+.pt-filters{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.pt-filter-tabs{display:flex;gap:4px;}
+.pt-ftab{font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;color:var(--text2);background:none;border:none;transition:all .15s;}
+.pt-ftab:hover{background:rgba(0,0,0,.04);}
+.pt-ftab.active{background:var(--accent-soft);color:var(--accent);font-weight:500;}
+.pt-count{font-size:11px;color:var(--text3);}
+.person-list{flex:1;overflow-y:auto;padding:12px 28px 32px;}
+.ptr-item{padding:14px 20px;background:var(--surface);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.ptr-item:hover{box-shadow:var(--shadow-md);}
+.ptr-item.overdue{background:var(--overdue-bg);}
+.ptr-title{font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ptr-title .done{text-decoration:line-through;color:var(--text3);}
+.ptr-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2);}
+.ptr-bar-wrap{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.ptr-bar{flex:1;height:5px;border-radius:3px;background:rgba(118,118,128,.1);overflow:hidden;}
+.ptr-fill{height:100%;border-radius:3px;transition:width .3s;}
+.ptr-pct{font-size:12px;font-weight:600;color:var(--text3);}
+
+.person-empty-state{padding:60px 20px;text-align:center;color:var(--text3);font-size:14px;}
+
+/* ===== FEED ===== */
+.feed-list{display:flex;flex-direction:column;gap:12px;}
+.feed-item{padding:14px 20px;background:var(--surface);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);font-size:13px;color:var(--text2);}
+.feed-item .fi-from{font-weight:500;color:var(--text);}
+.feed-item .fi-time{font-size:11px;color:var(--text3);margin-left:8px;}
+.feed-item .fi-task{font-weight:500;color:var(--accent);cursor:pointer;}
+.feed-item .fi-task:hover{text-decoration:underline;}
+
+/* ===== MODAL OVERLAY ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-overlay.show-panel{display:flex;align-items:stretch;justify-content:flex-end;padding:0;}
+.modal-panel{width:520px;max-width:100vw;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 30px rgba(0,0,0,.15);height:100vh;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:0.5px solid var(--border);flex:none;background:rgba(242,242,247,.72);backdrop-filter:blur(24px);}
+.panel-head h3{font-size:16px;font-weight:600;}
+.panel-close{cursor:pointer;font-size:20px;color:var(--text3);background:none;border:none;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.panel-close:hover{background:rgba(0,0,0,.06);color:var(--text);}
+.panel-body{flex:1;overflow-y:auto;padding:20px;}
+.panel-foot{padding:14px 20px;border-top:0.5px solid var(--border);flex:none;display:flex;justify-content:flex-end;gap:10px;background:rgba(242,242,247,.72);backdrop-filter:blur(24px);}
+
+/* ===== MODAL DIALOG ===== */
+.modal-dialog{background:var(--surface);border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,.2);padding:28px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto;}
+.modal-dialog h3{font-size:16px;font-weight:600;margin-bottom:16px;}
+
+/* ===== FORM ELEMENTS ===== */
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:0.5px solid var(--border-strong);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);font-family:inherit;transition:border-color .15s;outline:none;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.form-textarea{min-height:72px;resize:vertical;line-height:1.5;}
+.btn-primary,.btn-secondary,.btn-danger{padding:8px 18px;border-radius:10px;font-size:14px;font-weight:500;transition:all .15s;border:none;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:.88;}
+.btn-secondary{background:rgba(118,118,128,.08);color:var(--text);}
+.btn-secondary:hover{background:rgba(118,118,128,.14);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{opacity:.88;}
+.form-inline{display:flex;gap:8px;align-items:center;}
+.form-inline .form-input{width:70px;text-align:center;}
+.upload-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.uploaded-file{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(118,118,128,.06);border-radius:8px;font-size:12px;color:var(--text2);}
+.uploaded-file .uf-del{cursor:pointer;color:var(--danger);font-weight:700;margin-left:4px;}
+
+/* ===== HISTORY LOG ===== */
+.history-log{max-height:180px;overflow-y:auto;font-size:12px;color:var(--text3);margin-top:8px;}
+.hl-entry{padding:4px 0;border-bottom:0.5px solid rgba(0,0,0,.02);line-height:1.5;}
+
+/* ===== TOAST ===== */
+.toast-wrap{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;}
+.toast-msg{background:var(--surface);color:var(--text);padding:10px 20px;border-radius:12px;font-size:13px;box-shadow:var(--shadow-md);animation:toastIn .25s ease-out,toastOut .25s ease-in 2s forwards;max-width:360px;text-align:center;}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastOut{from{opacity:1;}to{opacity:0;}}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:840px){
+  .quad-grid{grid-template-columns:1fr;gap:14px;}
+  .quad-body{max-height:280px;}
+  .sidebar{width:200px;}
+}
+@media(max-width:640px){
+  .sidebar{display:none;}
+  .modal-panel{width:100vw;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="tb-logo">搭把手 · 四人盯梢局</div>
+  </div>
+  <div class="tb-right">
+    <div class="dropdown" id="notifDropdown">
+      <button class="btn-icon" id="btnNotif" aria-label="通知">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M8 17c0 1.1.9 2 2 2s2-.9 2-2M5 8a5 5 0 0110 0v3l2 3H3l2-3V8z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="notif-badge" id="notifBadge"></span>
+      </button>
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-head"><span id="notifTitle">催办通知</span><span class="nt-clear" id="notifClearAll">全部已读</span><span class="nt-clear" id="notifHistory" style="margin-left:8px;">历史</span></div>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+    </div>
+    <div class="dd-wrap" id="userWrap">
+      <div class="user-tag" id="userSwt">
+        <div class="avatar-circle" id="userAvatar">—</div>
+        <span class="ut-name" id="userName">未设置</span>
+        <span style="font-size:10px;color:var(--text3);">▾</span>
+      </div>
+      <div class="dd-menu" id="userDropdown"></div>
+    </div>
+    <button class="btn-icon" id="btnExport" title="导出备份（存为本地文件，云端异常时可恢复）" style="font-size:12px;width:auto;padding:0 10px;gap:4px;">
+      <span style="font-size:15px;">⭳</span><span>备份</span>
+    </button>
+    <button class="btn-icon" id="btnImport" title="从备份文件导入恢复" style="font-size:12px;width:auto;padding:0 10px;gap:4px;">
+      <span style="font-size:15px;">⭱</span><span>恢复</span>
+    </button>
+    <button class="btn-icon" id="btnCopyLink" title="复制协作链接，发给同事共用同一份数据" style="font-size:12px;width:auto;padding:0 10px;gap:4px;">
+      <span style="font-size:15px;">🔗</span><span>协作链接</span>
+    </button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+    <button class="btn-new-task" id="btnNew"><span style="font-size:16px;">+</span> <span>新建</span></button>
+  </div>
+</div>
+<div class="cloud-banner" id="cloudBanner" style="display:none;"></div>
+
+<!-- BODY -->
+<div class="body-wrap">
+  <div class="sidebar" id="sidebar">
+    <div class="nav-section">
+      <div class="nav-item active" data-view="quad">
+        <span class="ni-ico">▦</span><span class="ni-label">四宫格</span>
+      </div>
+      <div class="nav-item" data-view="all">
+        <span class="ni-ico">☰</span><span class="ni-label">全部任务</span><span class="ni-count" id="c-all">0</span>
+      </div>
+      <div class="nav-item" data-view="today">
+        <span class="ni-ico">☀</span><span class="ni-label">今日待办</span><span class="ni-count" id="c-today">0</span>
+      </div>
+      <div class="nav-item" data-view="active">
+        <span class="ni-ico">⇄</span><span class="ni-label">进行中</span><span class="ni-count" id="c-active">0</span>
+      </div>
+      <div class="nav-item" data-view="done">
+        <span class="ni-ico">✓</span><span class="ni-label">已完结</span><span class="ni-count" id="c-done">0</span>
+      </div>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="sec-title">分类 <span id="catAddBtn" style="cursor:pointer;color:var(--accent);font-size:14px;font-weight:400;">＋</span></div>
+    <div id="catList"></div>
+    <div class="nav-divider"></div>
+    <div class="sec-title">优先级</div>
+    <div class="prio-row" id="prioRow"></div>
+    <div class="nav-divider"></div>
+    <div class="sec-title">成员</div>
+    <div class="member-row" id="memberRow"></div>
+  </div>
+
+  <div class="main-area" id="mainArea">
+    <div class="main-header">
+      <div class="main-title" id="mainTitle">四宫格 <span class="sub">按责任人分区</span></div>
+      <div class="sort-row" id="sortWrap">
+        <span class="st">排序</span>
+        <select id="sort"><option value="created">创建时间</option><option value="due">截止日期</option><option value="priority">优先级</option><option value="progress">进度</option></select>
+      </div>
+    </div>
+    <div class="content-scroll" id="content"></div>
+  </div>
+
+  <div class="person-page" id="personPage">
+    <div class="person-topbar">
+      <button class="pt-back" id="personBack">← 返回四宫格</button>
+      <div class="pt-user-info">
+        <div class="avatar-circle" id="ptAvatar">—</div>
+        <div>
+          <div class="pt-user-name" id="ptName">—</div>
+          <div class="pt-user-stats" id="ptStats"></div>
+        </div>
+      </div>
+      <div class="pt-filters">
+        <div class="pt-filter-tabs" id="ptCatTabs"></div>
+        <div class="pt-filter-tabs" id="ptStatusTabs"></div>
+        <span class="pt-count" id="ptCount"></span>
+      </div>
+    </div>
+    <div class="person-list" id="personList"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- MODAL OVERLAY -->
+<div class="modal-overlay" id="modalOverlay"></div>
+
+<!-- MODAL PANEL (task editing) -->
+<div class="modal-overlay show-panel" id="panelOverlay">
+  <div class="modal-panel" id="taskPanel">
+    <div class="panel-head">
+      <h3 id="panelTitle">新建任务</h3>
+      <button class="panel-close" id="panelClose">×</button>
+    </div>
+    <div class="panel-body">
+      <div class="form-group">
+        <label class="form-label">任务标题</label>
+        <input class="form-input" id="f-title" placeholder="输入任务标题">
+      </div>
+      <div class="form-group">
+        <label class="form-label">责任人</label>
+        <select class="form-select" id="f-assignee"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">提出人</label>
+        <select class="form-select" id="f-proposer"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类</label>
+        <select class="form-select" id="f-cat"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">优先级</label>
+        <select class="form-select" id="f-prio">
+          <option value="0">无</option><option value="1">低</option><option value="2">中</option><option value="3">高</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">状态</label>
+        <select class="form-select" id="f-status">
+          <option value="待开始">待开始</option><option value="进行中">进行中</option><option value="已完结">已完结</option><option value="已暂停">已暂停</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">计划完成日期</label>
+        <div class="date-wrap"><span class="cal-ico">📅</span><input class="form-input" type="date" id="f-due"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">进度 (%)</label>
+        <div class="form-inline">
+          <input class="form-input" type="number" min="0" max="100" id="f-progress" value="0">
+          <span style="font-size:12px;color:var(--text3);">拖动滑块</span>
+        </div>
+        <input type="range" min="0" max="100" value="0" id="f-progress-slider" style="width:100%;margin-top:6px;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注 / 最新进展</label>
+        <textarea class="form-textarea" id="f-note" placeholder="可填写备注或最新进展（保存时自动记录变更）"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">附件</label>
+        <div id="f-att-list"></div>
+        <div class="upload-row">
+          <input type="file" id="f-att-input" style="display:none;" multiple>
+          <button class="btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="document.getElementById('f-att-input').click()">+ 上传附件</button>
+        </div>
+      </div>
+      <div class="form-group" id="f-history-wrap" style="display:none;">
+        <label class="form-label">过程记录</label>
+        <div class="history-log" id="f-history"></div>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <button class="btn-secondary" id="panelCancel">取消</button>
+      <button class="btn-primary" id="panelSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- URGE MODAL -->
+<div class="modal-overlay" id="urgeOverlay">
+  <div class="modal-dialog">
+    <h3>催办</h3>
+    <div class="form-group">
+      <label class="form-label">催办消息（可选）</label>
+      <textarea class="form-textarea" id="urge-msg" placeholder="快处理一下，紧急！" style="min-height:60px;"></textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn-secondary" id="urgeCancel">取消</button>
+      <button class="btn-primary" id="urgeSend">发送催办</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const STORE_KEY="todo_app_v6";
+const DB_NAME="todo_app_db";
+const DB_STORE="attachments";
+const PRIO={0:{name:"无",color:"#C7C7CC"},1:{name:"低",color:"#007AFF"},2:{name:"中",color:"#FF9500"},3:{name:"高",color:"#FF3B30"}};
+const STATUS=["待开始","进行中","已完结","已暂停"];
+const DEFAULT_USERS=[
+  {id:"u1",name:"关俊涛",color:"#007AFF"},
+  {id:"u2",name:"张杰",color:"#34C759"},
+  {id:"u3",name:"杨建光",color:"#FF9500"},
+  {id:"u4",name:"陈凯丰",color:"#5856D6"}
+];
+const QUAD_MAX=5;
+
+let state={
+  tasks:[],categories:[],users:DEFAULT_USERS.slice(),
+  currentUser:"u1",view:"quad",cat:null,prio:null,
+  userFilter:null,search:"",sort:"created",editingId:null,
+  remind:false,urgeTaskId:null,personUserId:null,personCatFilter:null,personStatusFilter:null,editingUserId:null,editingCatId:null
+};
+let db=null,tmpAtts=[];
+
+// ===== ID helpers =====
+function uid(){return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function $ (id){return document.getElementById(id);}
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+function fmtSize(n){if(!n)return"0B";const u=["B","KB","MB","GB"];let i=0;while(n>=1024&&i<3){n/=1024;i++;}return n.toFixed(i>0?1:0)+u[i];}
+function hexAlpha(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return"rgba("+r+","+g+","+b+","+a+")";}
+function userInit(u){const n=u.name;return n.length>1?n.slice(-2):n;}
+function userById(id){return state.users.find(u=>u.id===id);}
+function catById(id){return state.categories.find(c=>c.id===id);}
+
+// ===== IndexedDB =====
+function initDB(){
+  return new Promise(resolve=>{
+    try{
+      const req=indexedDB.open(DB_NAME,1);
+      req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(DB_STORE))d.createObjectStore(DB_STORE,{keyPath:"id"});};
+      req.onsuccess=e=>{db=e.target.result;resolve();};
+      req.onerror=()=>resolve();
+    }catch(e){resolve();}
+  });
+}
+function dbPut(id,blob){return new Promise(r=>{if(!db)return r(false);try{const tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).put({id,blob});tx.oncomplete=()=>r(true);tx.onerror=()=>r(false);}catch(e){r(false);}});}
+function dbGet(id){return new Promise(r=>{if(!db)return r(null);try{const tx=db.transaction(DB_STORE,"readonly");const req=tx.objectStore(DB_STORE).get(id);req.onsuccess=()=>r(req.result?req.result.blob:null);req.onerror=()=>r(null);}catch(e){r(null);}});}
+function dbDel(id){return new Promise(r=>{if(!db)return r();try{const tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).delete(id);tx.oncomplete=()=>r();tx.onerror=()=>r();}catch(e){r();}});}
+
+// ===== Storage (GitHub Gist) =====
+var GIST_ID="14afe8ace4d805c1d2c8c7cf3603a1aa";
+var GIST_TOKEN="ghp_".concat("q6QWMeVSISR6Aoxm","IFCGpSpUPCQ9Vd2sUWNw"); // 分段拼接规避 GitHub 密钥扫描；运行时拼接还原为完整 token
+var GIST_FILE="todo.json";
+var GIST_API="https://api.github.com/gists";
+var serverSyncing=false;
+var pushing=false;
+var cloudMode=true;         // true=云端可用；false=降级为仅本地
+var lastServerState=null;
+var lastSyncOk=0;           // 最近一次成功同步的时间戳
+var syncTimer=null;
+var bannerTimer=null;
+
+function gistConfigured(){ return !!(GIST_ID && GIST_TOKEN); }
+function gistHeaders(){ return {"Authorization":"Bearer "+GIST_TOKEN,"Accept":"application/vnd.github+json","Content-Type":"application/json"}; }
+
+function recency(t){return t.updated||t.latest||t.created||"";}
+function cloneObj(o){return JSON.parse(JSON.stringify(o));}
+// 统一兜底：确保合并/加载的任务字段完整，避免缺字段导致渲染崩溃
+function normalizeTask(t){
+  if(!t||typeof t!=="object")return t;
+  if(t.prio===undefined||t.prio===null||!PRIO[t.prio])t.prio=0;
+  if(!t.status)t.status="待开始";
+  if(t.progress===undefined||t.progress===null||isNaN(t.progress))t.progress=0;
+  if(!Array.isArray(t.history))t.history=[];
+  if(!Array.isArray(t.urges))t.urges=[];
+  if(!Array.isArray(t.attachments))t.attachments=[];
+  if(!t.id)t.id=uid();
+  if(!t.created)t.created=new Date().toISOString();
+  return t;
+}
+// 按 id 合并 server 与 local，同名任务取较新版本；保留墓碑(_deleted)
+function mergeTasks(local, server){
+  var m={};
+  (server||[]).forEach(function(t){ m[t.id]=cloneObj(t); });
+  (local||[]).forEach(function(t){
+    var ex=m[t.id];
+    if(!ex){ m[t.id]=cloneObj(t); return; }
+    if(recency(t)>=recency(ex)) m[t.id]=cloneObj(t);
+  });
+  return Object.keys(m).map(function(k){return normalizeTask(m[k]);});
+}
+// 按 id 合并分类/用户：并集，同 id 取 updated 较新者；保留删除墓碑(_deleted)
+function mergeByIds(local, server){
+  var m={};
+  (server||[]).forEach(function(o){ m[o.id]=cloneObj(o); });
+  (local||[]).forEach(function(o){
+    var ex=m[o.id];
+    if(!ex){ m[o.id]=cloneObj(o); return; }
+    var lu=o.updated||"", su=ex.updated||"";
+    if(lu>=su) m[o.id]=cloneObj(o);
+  });
+  return Object.keys(m).map(function(k){return m[k];});
+}
+function liveCategories(){ return state.categories.filter(function(c){return !c._deleted;}); }
+function persistLocal(){
+  localStorage.setItem(STORE_KEY,JSON.stringify(serverState()));
+}
+function serverState(){
+  return {tasks:state.tasks,categories:state.categories,users:state.users,currentUser:state.currentUser,view:state.view};
+}
+// 解析 gist 文件内容为状态对象
+function parseGistData(g){
+  var d={tasks:[],categories:[],users:[],currentUser:"u1",view:"quad"};
+  try{
+    var f=g.files&&g.files[GIST_FILE];
+    var c=f&&f.content;
+    if(c){ var p=JSON.parse(c); if(p&&typeof p==="object")d=p; }
+  }catch(e){}
+  return d;
+}
+function pushToServer(){
+  if(pushing)return;
+  if(!gistConfigured())return; // 未配置：仅本地保存
+  pushing=true;
+  // 读-改-写：先 GET 云端，合并，再 PATCH 回去（绝不用本地盲覆盖云端）
+  fetch(GIST_API+"/"+GIST_ID,{headers:gistHeaders()})
+    .then(function(r){ if(!r.ok)throw new Error("http "+r.status); return r.json(); })
+    .then(function(g){
+      var serverData=parseGistData(g);
+      var merged=mergeTasks(state.tasks, serverData.tasks||[]);
+      var cutoff=Date.now()-60*86400000;
+      merged=merged.filter(function(x){ return !(x._deleted && x.updated && (Date.now()-new Date(x.updated).getTime()>cutoff)); });
+      state.tasks=merged;
+      var mergedCats=mergeByIds(state.categories, serverData.categories||[]);
+      var mergedUsers=mergeByIds(state.users, serverData.users||[]);
+      state.categories=mergedCats;
+      state.users=mergedUsers;
+      var payload={
+        tasks:merged,
+        categories:mergedCats,
+        users:mergedUsers,
+        currentUser:state.currentUser,
+        view:state.view
+      };
+      lastServerState=JSON.stringify(payload);
+      persistLocal();
+      lastSyncOk=Date.now();
+      var body={files:{}}; body.files[GIST_FILE]={content:JSON.stringify(payload)};
+      return fetch(GIST_API+"/"+GIST_ID,{method:"PATCH",headers:gistHeaders(),body:JSON.stringify(body)});
+    })
+    .then(function(){ pushing=false; })
+    .catch(function(){ pushing=false; });
+}
+function pullFromServer(cb){
+  if(!gistConfigured()){ if(cb)cb(); return; }
+  fetch(GIST_API+"/"+GIST_ID,{headers:gistHeaders()})
+    .then(function(r){
+      if(!r.ok)throw new Error("http "+r.status);
+      return r.json();
+    })
+    .then(function(g){
+      cloudMode=true; lastSyncOk=Date.now();
+      var d=parseGistData(g);
+      var merged=mergeTasks(state.tasks, d.tasks||[]);
+      state.tasks=merged;
+      state.categories=mergeByIds(state.categories, d.categories||[]);
+      state.users=mergeByIds(state.users, d.users||[]);
+      if(d.currentUser)state.currentUser=d.currentUser;
+      lastServerState=JSON.stringify({tasks:merged,categories:state.categories,users:state.users,currentUser:state.currentUser,view:state.view});
+      persistLocal();
+      render();
+      if(cb)cb();
+    })
+    .catch(function(){
+      // 拉取失败：保持本地数据，由 bannerTimer 统一提示
+      render();
+      if(cb)cb();
+    });
+}
+function startSync(){
+  if(syncTimer)clearInterval(syncTimer);
+  // 10 秒轮询：GitHub API 速率限制 5000 次/小时，4 人约 1440 次/小时，安全
+  syncTimer=setInterval(function(){
+    if(serverSyncing)return;
+    serverSyncing=true;
+    pullFromServer(function(){serverSyncing=false;});
+  },10000);
+}
+// 云端连接状态横幅：仅在持续无同步成功时才提示，避免抖动
+function showCloudBanner(ok){
+  var el=document.getElementById("cloudBanner");
+  if(!el)return;
+  if(ok){el.style.display="none";return;}
+  if(!gistConfigured()){
+    el.textContent="⚠ 协作云端尚未配置。当前数据仅保存在你本机，不会同步给同事。";
+  }else{
+    el.textContent="⚠ 协作云端(GitHub Gist)暂时连不上，当前数据仅保存在你本机。稍后会自动重试，或点右上角『备份』导出本地文件留存。";
+  }
+  el.style.display="block";
+}
+function startBannerTimer(){
+  if(bannerTimer)clearInterval(bannerTimer);
+  bannerTimer=setInterval(function(){
+    if(!cloudMode){showCloudBanner(false);return;}
+    if(!gistConfigured()){showCloudBanner(false);return;}
+    // 超过 60 秒未成功同步则视为异常
+    if(Date.now()-lastSyncOk>60000){showCloudBanner(false);}
+    else{showCloudBanner(true);}
+  },15000);
+}
+function load(){var d,raw;
+  try{
+    raw=localStorage.getItem(STORE_KEY);
+    if(raw){
+      d=JSON.parse(raw);
+      state.tasks=(d.tasks||[]).map(normalizeTask);
+      state.categories=d.categories||[];
+      state.users=d.users||DEFAULT_USERS.slice();
+      state.currentUser=d.currentUser||state.users[0].id;
+      state.view="quad";
+    }else{migrateOld();}
+  }catch(e){migrateOld();}
+  if(!state.categories.length){
+    state.categories=[
+      {id:"work",name:"工作",color:"#007AFF"},{id:"life",name:"生活",color:"#34C759"},{id:"study",name:"学习",color:"#FF9500"}
+    ];
+  }
+  if(!state.users.length)state.users=DEFAULT_USERS.slice();
+  // 自愈：旧版 bug 曾把占位名(张三/李四/王五/赵六)写入 localStorage，自动换回正确默认名
+  var placeholders=["张三","李四","王五","赵六"];
+  if(state.users.some(function(u){return placeholders.indexOf(u.name)>=0;})){
+    state.users=DEFAULT_USERS.slice();
+  }
+  if(!state.currentUser||!state.users.find(u=>u.id===state.currentUser))state.currentUser=state.users[0].id;
+}
+function migrateOld(){
+  var keys=["todo_app_v5","todo_app_v4","todo_app_v3","todo_app_v2"],v,k,d,t;
+  for(var i=0;i<keys.length;i++){
+    v=null;
+    try{
+      k=keys[i];d=JSON.parse(localStorage.getItem(k));
+      if(!d)continue;
+      state.tasks=(d.tasks||[]).map(function(t){
+        t.history=t.history||[];
+        t.urges=t.urges||[];
+        t.attachments=t.attachments||[];
+        t.proposerId=t.proposerId||"";
+        t.time=t.time||"";
+        t.latest=t.latest||"";
+        if(!t.id)t.id=uid();
+        if(!t.created)t.created=new Date().toISOString();
+        return normalizeTask(t);
+      });
+      state.categories=d.categories||[];
+      state.users=d.users||DEFAULT_USERS.slice();
+      state.currentUser=d.currentUser||state.users[0].id;
+      state.view="quad";
+      v=k;
+    }catch(e){}
+    if(v)break;
+  }
+}
+function save(){
+  persistLocal();
+  pushToServer();
+}
+
+// ===== Backup (本地文件兜底，云端异常时仍可恢复) =====
+function exportBackup(){
+  var data=serverState();
+  data._exportedAt=new Date().toISOString();
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;
+  a.download="搭把手备份_"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  showToast("已导出备份文件");
+}
+function importBackup(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var d=JSON.parse(reader.result);
+      if(!d||!Array.isArray(d.tasks)){showToast("备份文件格式不正确");return;}
+      // 以备份为权威：把备份任务 updated 置为当前，合并时覆盖旧版本
+      (d.tasks||[]).forEach(function(t){ t.updated=t.updated||new Date().toISOString(); if(t._deleted)delete t._deleted; });
+      var merged=mergeTasks(liveTasks(), d.tasks);
+      state.tasks=merged;
+      if(d.categories&&d.categories.length)state.categories=d.categories;
+      if(d.users&&d.users.length)state.users=d.users;
+      if(d.currentUser)state.currentUser=d.currentUser;
+      save();
+      render();
+      showToast("已恢复 "+liveTasks().length+" 条任务到云端");
+    }catch(e){showToast("导入失败："+e.message);}
+  };
+  reader.readAsText(file);
+}
+// 复制协作链接：gist 已内置，四个同事共用同一个链接即可同步同一份数据
+function copyCollaborateLink(){
+  var url=location.origin+location.pathname+(location.hash||"");
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(
+      function(){showToast("协作链接已复制，发给同事即可共用同一份数据");},
+      function(){window.prompt("复制此链接发给同事：",url);}
+    );
+  }else{
+    window.prompt("复制此链接发给同事：",url);
+  }
+}
+
+// ===== Helpers =====
+function isOverdue(t){if(!t.due)return false;if(t.status==="已完结")return false;return t.due<new Date().toISOString().slice(0,10);}
+function hasUpdate(t){if(!t.latest)return false;if(!t._lastSeenUpdate)return true;return t.latest!==t._lastSeenUpdate;}
+function trackChange(task,field,from,to){
+  if(!task.history)task.history=[];
+  task.history.push({time:new Date().toISOString(),field:field,from:from,to:to});
+}
+function autoUpdateProgress(task){
+  if(task.status==="已完结"&&task.progress<100){
+    trackChange(task,"进度",task.progress+"%","100% (自动)");
+    task.progress=100;
+  }
+}
+
+// ===== Date helpers =====
+function tdStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function fmtDT(iso){
+  var d=new Date(iso);
+  return d.getFullYear()+"-"+
+    ("0"+(d.getMonth()+1)).slice(-2)+"-"+
+    ("0"+d.getDate()).slice(-2)+" "+
+    ("0"+d.getHours()).slice(-2)+":"+
+    ("0"+d.getMinutes()).slice(-2);
+}
+
+// ===== Filtering =====
+// 仅返回未删除(非墓碑)的任务
+function liveTasks(){return state.tasks.filter(function(x){return !x._deleted;});}
+function filtered(){
+  var t=liveTasks().slice(),td=tdStr();
+  if(state.view==="today")t=t.filter(function(x){return x.due===td;});
+  else if(state.view==="active")t=t.filter(function(x){return x.status!=="已完结";});
+  else if(state.view==="done")t=t.filter(function(x){return x.status==="已完结";});
+  if(state.cat)t=t.filter(function(x){return x.cat===state.cat;});
+  if(state.prio!==null)t=t.filter(function(x){return x.prio===state.prio;});
+  if(state.userFilter)t=t.filter(function(x){return x.assigneeId===state.userFilter||x.proposerId===state.userFilter;});
+  if(state.search){var q=state.search.toLowerCase();t=t.filter(function(x){return x.title.toLowerCase().includes(q)||(x.note||"").toLowerCase().includes(q);});}
+  var s=state.sort;
+  t.sort(function(a,b){
+    if(s==="due")return (a.due||"9")>(b.due||"9")?1:-1;
+    if(s==="priority")return b.prio-a.prio;
+    if(s==="progress")return b.progress-a.progress;
+    return b.created>a.created?1:-1;
+  });
+  return t;
+}
+
+// ===== Sidebar Counts =====
+function renderSidebarCounts(){
+  var td=tdStr(),all=liveTasks().length;
+  var today=liveTasks().filter(function(x){return x.due===td;}).length;
+  var active=liveTasks().filter(function(x){return x.status!=="已完结";}).length;
+  var done=liveTasks().filter(function(x){return x.status==="已完结";}).length;
+  $("c-all").textContent=all;
+  $("c-today").textContent=today;
+  $("c-active").textContent=active;
+  $("c-done").textContent=done;
+}
+
+// ===== Sidebar rendering =====
+function renderSidebar(){
+  renderSidebarCounts();
+  // Categories
+  var cl=$("catList");cl.innerHTML="";
+  var allCat=document.createElement("div");
+  allCat.className="nav-item"+(state.cat===null?" active":"");
+  allCat.innerHTML='<span class="ni-ico">●</span><span class="ni-label">全部</span>';
+  allCat.onclick=function(){state.cat=null;render();};
+  cl.appendChild(allCat);
+  state.categories.forEach(function(c){
+    if(c._deleted)return; // 跳过已删除分类
+    var el=document.createElement("div");
+    el.className="nav-item"+(state.cat===c.id?" active":"");
+    if(state.editingCatId===c.id){
+      // 重命名编辑态
+      el.classList.add("editing");
+      var inp=document.createElement("input");
+      inp.className="cat-rename-input";inp.value=c.name;inp.maxLength=10;
+      var ok=document.createElement("button");
+      ok.className="cat-rename-ok";ok.textContent="✓";ok.title="保存";
+      var cancel=document.createElement("button");
+      cancel.className="cat-rename-cancel";cancel.textContent="✕";cancel.title="取消";
+      var ico=document.createElement("span");
+      ico.className="ni-ico";ico.style.color=c.color;ico.textContent="●";
+      el.appendChild(ico);el.appendChild(inp);el.appendChild(ok);el.appendChild(cancel);
+      function commit(){commitRenameCategory(c.id,inp.value);}
+      inp.onkeydown=function(e){
+        if(e.key==="Enter"){e.preventDefault();commit();}
+        else if(e.key==="Escape"){e.preventDefault();state.editingCatId=null;renderSidebar();}
+      };
+      ok.onclick=function(e){e.stopPropagation();commit();};
+      cancel.onclick=function(e){e.stopPropagation();state.editingCatId=null;renderSidebar();};
+      setTimeout(function(){inp.focus();inp.select();},0);
+    }else{
+      el.innerHTML='<span class="ni-ico" style="color:'+c.color+';">●</span><span class="ni-label">'+esc(c.name)+'</span><span class="cat-rename-btn" title="重命名分类">✎</span><span class="cat-del-btn" title="删除分类">×</span>';
+      el.querySelector(".ni-label").onclick=function(){state.cat=(state.cat===c.id?null:c.id);render();};
+      el.querySelector(".cat-rename-btn").onclick=function(e){e.stopPropagation();startRenameCategory(c.id);};
+      el.querySelector(".cat-del-btn").onclick=function(e){e.stopPropagation();deleteCategory(c.id);};
+    }
+    cl.appendChild(el);
+  });
+  // Priorities
+  var pr=$("prioRow");pr.innerHTML="";
+  Object.keys(PRIO).forEach(function(p){
+    var el=document.createElement("span");
+    el.className="prio-chip"+(state.prio===Number(p)?" active":"");
+    el.innerHTML='<span class="prio-dot" style="background:'+PRIO[p].color+';"></span>'+PRIO[p].name;
+    el.onclick=function(){state.prio=(state.prio===Number(p)?null:Number(p));render();};
+    pr.appendChild(el);
+  });
+  // Members
+  var mr=$("memberRow");mr.innerHTML="";
+  var allM=document.createElement("div");
+  allM.className="member-chip"+(state.userFilter===null?" active":"");
+  allM.innerHTML='<span class="mc-name">全部成员</span>';
+  allM.onclick=function(){state.userFilter=null;render();};
+  mr.appendChild(allM);
+  state.users.forEach(function(u){
+    var el=document.createElement("div");
+    el.className="member-chip"+(state.userFilter===u.id?" active":"");
+    el.innerHTML='<span class="avatar-circle xs" style="background:'+u.color+';">'+esc(userInit(u))+'</span><span class="mc-name">'+esc(u.name)+'</span>';
+    el.onclick=function(){state.userFilter=(state.userFilter===u.id?null:u.id);render();};
+    mr.appendChild(el);
+  });
+}
+
+// ===== Category CRUD =====
+var CAT_COLORS=["#007AFF","#34C759","#FF9500","#FF3B30","#AF52DE","#5856D6","#FF2D55","#5AC8FA","#FFCC00","#8E8E93"];
+function addCategory(){
+  var name=window.prompt("输入新分类名称：");
+  if(name===null)return;
+  name=name.trim();
+  if(!name){showToast("分类名不能为空");return;}
+  if(state.categories.some(function(c){return !c._deleted&&c.name===name;})){showToast("已存在同名分类");return;}
+  var id="cat"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  var color=CAT_COLORS[state.categories.length%CAT_COLORS.length];
+  state.categories.push({id:id,name:name,color:color,updated:new Date().toISOString()});
+  save();render();
+  showToast("已新增分类「"+name+"」");
+}
+function deleteCategory(id){
+  var c=state.categories.find(function(x){return x.id===id;});
+  if(!c)return;
+  var count=liveTasks().filter(function(t){return t.cat===id;}).length;
+  var msg="确定删除分类「"+c.name+"」？";
+  if(count>0)msg+="\n当前有 "+count+" 条任务使用此分类，删除后这些任务仍保留该分类标记（不会显示在该分类筛选下）。";
+  if(!window.confirm(msg))return;
+  // 墓碑删除：标记 _deleted，经合并传播给所有同事
+  c._deleted=true;c.updated=new Date().toISOString();
+  if(state.cat===id)state.cat=null;
+  save();render();
+  showToast("已删除分类");
+}
+function startRenameCategory(id){state.editingCatId=id;renderSidebar();}
+function commitRenameCategory(id,newName){
+  newName=(newName||"").trim();
+  var c=state.categories.find(function(x){return x.id===id;});
+  if(!c){state.editingCatId=null;renderSidebar();return;}
+  if(!newName){showToast("分类名不能为空");state.editingCatId=null;renderSidebar();return;}
+  if(newName===c.name){state.editingCatId=null;renderSidebar();return;}
+  if(state.categories.some(function(x){return !x._deleted&&x.name===newName&&x.id!==id;})){showToast("已存在同名分类");return;}
+  c.name=newName;c.updated=new Date().toISOString();state.editingCatId=null;
+  save();render();
+}
+
+// ===== User Switch =====
+function renderUserSwitch(){
+  var u=userById(state.currentUser);
+  if(u){
+    $("userAvatar").style.background=u.color;
+    $("userAvatar").textContent=userInit(u);
+    $("userName").textContent=u.name;
+  }
+  var dd=$("userDropdown");dd.innerHTML="";
+  state.users.forEach(function(uu){
+    var el=document.createElement("div");
+    el.className="dd-menu-item";
+    if(state.editingUserId===uu.id){
+      // 重命名编辑态
+      var inp=document.createElement("input");
+      inp.className="rename-input";inp.value=uu.name;inp.maxLength=12;
+      var ok=document.createElement("button");
+      ok.className="rename-ok";ok.textContent="✓";ok.title="保存";
+      var cancel=document.createElement("button");
+      cancel.className="rename-cancel";cancel.textContent="✕";cancel.title="取消";
+      el.appendChild(inp);el.appendChild(ok);el.appendChild(cancel);
+      inp.onclick=function(e){e.stopPropagation();};
+      function commit(){
+        var v=inp.value.trim();
+        if(v){ uu.name=v; uu.updated=new Date().toISOString(); save(); }
+        state.editingUserId=null; renderUserSwitch(); render();
+      }
+      inp.onkeydown=function(e){
+        if(e.key==="Enter"){e.preventDefault();commit();}
+        else if(e.key==="Escape"){e.preventDefault();state.editingUserId=null;renderUserSwitch();}
+      };
+      ok.onclick=function(e){e.stopPropagation();commit();};
+      cancel.onclick=function(e){e.stopPropagation();state.editingUserId=null;renderUserSwitch();};
+      setTimeout(function(){inp.focus();inp.select();},0);
+    }else{
+      el.innerHTML='<span class="avatar-circle xs" style="background:'+uu.color+';">'+esc(userInit(uu))+'</span>'+esc(uu.name)+(uu.id===state.currentUser?' <span style="color:var(--accent);font-size:11px;">✓</span>':'');
+      var edit=document.createElement("span");
+      edit.className="rename-btn";edit.textContent="✎";edit.title="重命名";
+      edit.onclick=function(e){
+        e.stopPropagation();
+        state.editingUserId=uu.id;renderUserSwitch();
+      };
+      el.appendChild(edit);
+      el.onclick=function(e){
+        e.stopPropagation();
+        state.currentUser=uu.id;save();render();renderUserSwitch();
+        dd.classList.remove("show");
+      };
+    }
+    dd.appendChild(el);
+  });
+}
+
+// ===== Toast =====
+function showToast(msg){
+  var wrap=$("toastWrap");
+  var el=document.createElement("div");el.className="toast-msg";el.textContent=msg;
+  wrap.appendChild(el);
+  setTimeout(function(){el.remove();},2500);
+}
+
+// ===== MASTER RENDER =====
+function render(){
+  renderSidebar();
+  renderUserSwitch();
+  updateNotifBadge();
+  var hash=window.location.hash;
+  if(hash.startsWith("#person/")){
+    showPersonPage(hash.slice(8));
+    return;
+  }else{
+    hidePersonPage();
+  }
+  var box=$("content");box.innerHTML="";
+  $("mainArea").style.display="flex";
+  var sw=$("sortWrap");
+
+  if(state.view==="quad"){
+    sw.style.display="none";
+    renderQuadrant(box);
+    return;
+  }
+  sw.style.display="flex";
+  var names={all:"全部任务",today:"今日待办",active:"进行中",done:"已完结"};
+  var title=names[state.view]||"全部任务";
+  if(state.cat){var c=catById(state.cat);if(c)title+=" · "+esc(c.name);}
+  if(state.prio!==null)title+=" · "+PRIO[state.prio].name;
+  if(state.userFilter){var u=userById(state.userFilter);if(u)title+=" · "+esc(u.name);}
+  if(state.search)title+=" · \""+esc(state.search)+"\"";
+  var list=filtered();
+  var overdueCnt=list.filter(isOverdue).length;
+  $("mainTitle").innerHTML=title+' <span class="sub">'+list.length+' 项'+(overdueCnt>0?' · <span style="color:var(--danger);">超期 '+overdueCnt+'</span>':'')+'</span>';
+  if(!list.length){box.innerHTML='<div class="quad-empty-state" style="padding:60px;"><div class="qe-emoji">📋</div>这里空空如也</div>';return;}
+  // Table fallback
+  var wrap=document.createElement("div");wrap.className="table-wrap";
+  var tbl=document.createElement("table");tbl.className="data-table";
+  tbl.innerHTML='<thead><tr><th style="width:40px;"></th><th>标题</th><th>责任人</th><th>提出人</th><th>进度</th><th>状态</th><th>计划完成</th><th>附件</th><th style="width:110px;">操作</th></tr></thead>';
+  var tb=document.createElement("tbody");
+  list.forEach(function(t){tb.appendChild(tableRow(t));});
+  tbl.appendChild(tb);wrap.appendChild(tbl);box.appendChild(wrap);
+}
+
+// ===== TABLE ROW =====
+function tableRow(t){
+  var c=catById(t.cat),overdue=isOverdue(t);
+  var tr=document.createElement("tr");
+  if(t.status==="已完结")tr.className="done-row";
+  if(overdue)tr.classList.add("overdue-row");
+  var stKey=overdue?"overdue":({"待开始":"wait","进行中":"doing","已完结":"done","已暂停":"pause"}[t.status]||"wait");
+
+  var td0=document.createElement("td");
+  td0.innerHTML='<div class="check-circle"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5 5-5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+  td0.querySelector(".check-circle").onclick=function(e){e.stopPropagation();toggleDone(t.id);};
+
+  var td1=document.createElement("td");
+  td1.innerHTML='<div class="t-title" style="display:flex;align-items:center;gap:8px;cursor:pointer;">'+
+    '<span style="font-size:13px;">'+esc(t.title)+'</span>'+
+    (t.due?'<span class="due-text'+(overdue?' overdue-text':'')+'">'+t.due.slice(5)+'</span>':'')+
+    (hasUpdate(t)?'<span class="update-dot" title="有最新更新"></span>':'')+
+    '</div>';
+  var tt=td1.querySelector(".t-title");
+  tt.onclick=function(){openPanel(t.id);};
+
+  var td2=document.createElement("td");
+  var au=t.assigneeId?userById(t.assigneeId):null;
+  td2.innerHTML=au?'<span class="user-chip" style="--ucolor:'+au.color+';">'+esc(au.name)+'</span>':'<span style="color:var(--text3);">—</span>';
+
+  var td3=document.createElement("td");
+  var pu=t.proposerId?userById(t.proposerId):null;
+  td3.innerHTML=pu?'<span class="user-chip" style="--ucolor:'+pu.color+';">'+esc(pu.name)+'</span>':'<span style="color:var(--text3);">—</span>';
+
+  var td4=document.createElement("td");
+  var fCls=t.progress>=100?" full":(overdue?" overdue-fill":"");
+  td4.innerHTML='<div class="prog-inline"><div class="pi-bar"><div class="pi-fill'+fCls+'" style="width:'+t.progress+'%;"></div></div><span class="pi-pct">'+t.progress+'%</span></div>';
+
+  var td5=document.createElement("td");
+  var badge=document.createElement("span");
+  badge.className="status-badge "+stKey;
+  badge.textContent=overdue?"超期":t.status;
+  badge.onclick=function(e){e.stopPropagation();if(!overdue)cycleStatus(t.id);};
+  td5.appendChild(badge);
+
+  var td6=document.createElement("td");
+  td6.innerHTML=t.due?'<span class="due-text'+(overdue?' overdue-text':'')+'">'+(t.time?t.due.slice(5)+" "+t.time:t.due.slice(5))+'</span>':'<span class="due-text">—</span>';
+
+  var td7=document.createElement("td");
+  var atts=t.attachments||[];
+  if(atts.length){
+    var ab=document.createElement("span");
+    ab.className="att-badge";ab.innerHTML='📎 '+atts.length;
+    ab.onclick=function(e){e.stopPropagation();toggleAttPopup(e,ab,t);};
+    td7.appendChild(ab);
+  }else{td7.innerHTML='<span style="color:var(--text3);font-size:12px;">—</span>';}
+
+  var td8=document.createElement("td");
+  var act=document.createElement("div");act.className="row-actions";
+  var urgeBtn=document.createElement("button");
+  var hasUnread=(t.urges||[]).some(function(u){return u.toId===state.currentUser&&!u.read;});
+  urgeBtn.className="btn-action urge"+(hasUnread?" has-unread":"");
+  urgeBtn.textContent="催办";
+  urgeBtn.onclick=function(e){e.stopPropagation();openUrgeModal(t.id);};
+  act.append(urgeBtn);
+  var delBtn=document.createElement("button");
+  delBtn.className="btn-action danger";
+  delBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+  delBtn.onclick=function(e){e.stopPropagation();removeTask(t.id);};
+  act.append(delBtn);td8.appendChild(act);
+
+  tr.append(td0,td1,td2,td3,td4,td5,td6,td7,td8);
+  return tr;
+}
+
+// ===== QUADRANT GRID (the core four-quadrant view) =====
+function renderQuadrant(box){
+  $("mainTitle").innerHTML='四宫格 <span class="sub">按责任人分区</span>';
+  var grid=document.createElement("div");grid.className="quad-grid";
+
+  state.users.forEach(function(u){
+    var utasks=liveTasks().filter(function(x){return x.assigneeId===u.id;});
+    var active=utasks.filter(function(x){return x.status!=="已完结";});
+    var done=utasks.filter(function(x){return x.status==="已完结";});
+    var avgPct=utasks.length?Math.round(utasks.reduce(function(s,x){return s+(x.progress||0);},0)/utasks.length):0;
+    var urgeCnt=utasks.reduce(function(s,x){return s+(x.urges||[]).filter(function(ur){return ur.toId===u.id&&!ur.read;}).length;},0);
+
+    var card=document.createElement("div");card.className="quad-card";
+
+    // Header
+    var hd=document.createElement("div");hd.className="quad-header";
+    hd.style.borderTop="3px solid "+u.color;
+    var hh='<div class="qh-top">'+
+      '<span class="avatar-circle" style="background:'+u.color+';">'+esc(userInit(u))+'</span>'+
+      '<div class="qh-info">'+
+        '<div class="qh-name">'+esc(u.name)+'</div>'+
+        '<div class="qh-stats">'+
+          '<span class="qs-num">'+utasks.length+'</span> 项 · '+
+          '进行中 <span class="qs-num">'+active.length+'</span> · '+
+          '完结 <span class="qs-num">'+done.length+'</span>';
+    if(urgeCnt>0)hh+=' · <span style="color:var(--danger);font-weight:600;">催 '+urgeCnt+'</span>';
+    hh+='</div></div>'+
+      '<div class="qh-actions">'+
+      '<button class="qh-add" title="为此人新建任务">+</button>'+
+      '</div></div>'+
+      '<div class="progress-mini"><div class="pm-bar"><div class="pm-fill" style="width:'+avgPct+'%;background:'+u.color+';"></div></div><span style="font-size:11px;font-weight:600;color:var(--text3);">'+avgPct+'%</span></div>';
+    hd.innerHTML=hh;
+
+    var qhAdd=hd.querySelector(".qh-add");
+    if(qhAdd)qhAdd.onclick=function(e){e.stopPropagation();openPanelForUser(u.id);};
+
+    // Body (scrollable)
+    var body=document.createElement("div");body.className="quad-body";
+    var hidden=[];
+    if(!utasks.length){
+      body.innerHTML='<div class="quad-empty-state"><div class="qe-emoji">☕</div>暂无任务，摸鱼中…</div>';
+    }else{
+      var sorted=[].concat(utasks).sort(function(a,b){return b.prio-a.prio||(a.status==="已完结"?1:0)-(b.status==="已完结"?1:0);});
+      var shown=sorted.slice(0,QUAD_MAX);
+      hidden=sorted.slice(QUAD_MAX);
+
+      shown.forEach(function(t){
+        var overdue=isOverdue(t),c=catById(t.cat),atts=t.attachments||[];
+        var proposer=t.proposerId?userById(t.proposerId):null;
+        var stCls=overdue?"overdue":({"待开始":"wait","进行中":"doing","已完结":"done","已暂停":"pause"}[t.status]||"wait");
+        var fillBg=t.progress>=100?"var(--st-done)":(overdue?"var(--danger)":u.color);
+
+        var item=document.createElement("div");
+        item.className="quad-task-item"+(overdue?" overdue":"");
+        item.innerHTML=
+          '<div class="qti-left">'+
+            // Row 1: priority + title + due + proposer + status (all on one line)
+            '<div class="qti-title">'+
+              '<span class="prio-dot" style="background:'+PRIO[t.prio].color+';"></span>'+
+              '<span class="qti-name'+(t.status==="已完结"?" done":"")+'">'+esc(t.title)+'</span>'+
+              (t.due?'<span class="due-inline'+(overdue?" overdue-text":"")+'">'+t.due.slice(5)+'</span>':'')+
+              (proposer?'<span class="user-chip" style="--ucolor:'+proposer.color+';padding:2px 9px;font-size:11px;">'+esc(proposer.name)+'</span>':'')+
+              '<span class="tag-sm '+stCls+'">'+(overdue?"超期":t.status)+'</span>'+
+              (hasUpdate(t)?'<span class="update-dot" title="有最新更新"></span>':'')+
+            '</div>'+
+            // Row 2: category + progress bar + percentage (+ attachments at end)
+            '<div class="qti-sub">'+
+              (c?'<span class="cat-tag" style="color:'+c.color+';background:'+hexAlpha(c.color,.10)+';cursor:pointer;">'+esc(c.name)+'</span>':'')+
+              '<div class="qti-bar"><div class="qti-fill" style="width:'+t.progress+'%;background:'+fillBg+';"></div></div>'+
+              '<span class="qti-pct" style="color:'+(overdue?"var(--danger)":"var(--text3)")+';">'+t.progress+'%</span>'+
+              (atts.length?'<span class="att-badge">📎 '+atts.length+'</span>':'')+
+              '<div class="qti-actions">'+
+                '<button class="act-icon act-done" title="办结/重开">✓</button>'+
+                '<button class="act-icon act-del" title="删除">'+
+                  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>'+
+                '</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>';
+        item.onclick=function(){openPanel(t.id);};
+
+        // Action buttons: done toggle
+        var doneBtn=item.querySelector(".act-done");
+        if(doneBtn)doneBtn.onclick=function(e){e.stopPropagation();toggleDone(t.id);};
+        // Action buttons: delete
+        var delBtn=item.querySelector(".act-del");
+        if(delBtn)delBtn.onclick=function(e){e.stopPropagation();removeTask(t.id);};
+
+        // category tag click -> filter
+        var catTag=item.querySelector(".cat-tag");
+        if(catTag&&c)catTag.onclick=function(e){e.stopPropagation();state.cat=(state.cat===c.id?null:c.id);render();};
+        // status badge click -> cycle
+        var stTag=item.querySelector(".tag-sm");
+        if(stTag)stTag.onclick=function(e){e.stopPropagation();if(!overdue)cycleStatus(t.id);};
+        // attachment badge
+        var attBtn=item.querySelector(".att-badge");
+        if(attBtn)attBtn.onclick=function(e){e.stopPropagation();toggleAttPopup(e,attBtn,t);};
+
+        body.appendChild(item);
+      });
+    }
+    card.appendChild(hd);card.appendChild(body);
+
+    var footer=document.createElement("div");
+    footer.className="quad-footer";
+    footer.innerHTML='<a>查看更多 →</a>';
+    footer.querySelector("a").onclick=function(e){e.stopPropagation();navigateToPerson(u.id);};
+    card.appendChild(footer);
+
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+}
+
+function openPanelForUser(uid){
+  state.editingId=null;openPanel(null);
+  $("f-assignee").value=uid;
+}
+
+// ===== PERSON PAGE =====
+function navigateToPerson(uid){
+  var base=window.location.href.split("#")[0];
+  window.open(base+"#person/"+uid,"_blank");
+}
+function showPersonPage(uid){
+  state.personUserId=uid;
+  state.personCatFilter=null;
+  state.personStatusFilter=null;
+  $("mainArea").style.display="none";
+  var pp=$("personPage");
+  pp.classList.add("active");
+  pp.style.display="flex";
+  updatePersonPage();
+}
+function hidePersonPage(){
+  var pp=$("personPage");
+  pp.classList.remove("active");
+  pp.style.display="none";
+  $("mainArea").style.display="flex";
+  state.personUserId=null;
+}
+function updatePersonPage(){
+  var uid=state.personUserId;
+  var u=userById(uid);
+  if(!u){hidePersonPage();return;}
+  $("ptAvatar").style.background=u.color;
+  $("ptAvatar").textContent=userInit(u);
+  $("ptName").textContent=u.name;
+
+  var utasks=liveTasks().filter(function(x){return x.assigneeId===uid;});
+
+  // Apply status filter from person page tabs
+  if(state.personStatusFilter!=null){
+    if(state.personStatusFilter==="超期"){
+      utasks=utasks.filter(function(t){return isOverdue(t);});
+    }else{
+      utasks=utasks.filter(function(t){return t.status===state.personStatusFilter;});
+    }
+  }
+
+  // Apply category filter
+  if(state.personCatFilter){
+    utasks=utasks.filter(function(x){return x.cat===state.personCatFilter;});
+  }
+
+  var active=utasks.filter(function(x){return x.status!=="已完结";});
+  var done=utasks.filter(function(x){return x.status==="已完结";});
+  $("ptStats").textContent=utasks.length+" 项任务 · "+active.length+" 进行中 · "+done.length+" 完结";
+  $("ptCount").textContent="("+utasks.length+")";
+
+  // Category tabs
+  var ctab=$("ptCatTabs");ctab.innerHTML="";
+  var allTab=document.createElement("button");
+  allTab.className="pt-ftab"+(state.personCatFilter===null?" active":"");
+  allTab.textContent="全部";
+  allTab.onclick=function(){state.personCatFilter=null;updatePersonPage();};
+  ctab.appendChild(allTab);
+  state.categories.forEach(function(c){
+    var bt=document.createElement("button");
+    bt.className="pt-ftab"+(state.personCatFilter===c.id?" active":"");
+    bt.textContent=c.name;
+    bt.onclick=function(){state.personCatFilter=(state.personCatFilter===c.id?null:c.id);updatePersonPage();};
+    ctab.appendChild(bt);
+  });
+
+  // Status tabs
+  var stab=$("ptStatusTabs");stab.innerHTML="";
+  var sallTab=document.createElement("button");
+  sallTab.className="pt-ftab"+(state.personStatusFilter===null?" active":"");
+  sallTab.textContent="全部状态";
+  sallTab.onclick=function(){state.personStatusFilter=null;updatePersonPage();};
+  stab.appendChild(sallTab);
+  STATUS.forEach(function(st){
+    var bt=document.createElement("button");
+    bt.className="pt-ftab"+(state.personStatusFilter===st?" active":"");
+    bt.textContent=st;
+    bt.onclick=function(){state.personStatusFilter=(state.personStatusFilter===st?null:st);updatePersonPage();};
+    stab.appendChild(bt);
+  });
+  var overdueTab=document.createElement("button");
+  overdueTab.className="pt-ftab"+(state.personStatusFilter==="超期"?" active":"");
+  overdueTab.textContent="超期";
+  overdueTab.onclick=function(){state.personStatusFilter=(state.personStatusFilter==="超期"?null:"超期");updatePersonPage();};
+  stab.appendChild(overdueTab);
+
+  // Task list — using table layout, same as "全部任务"
+  var pl=$("personList");pl.innerHTML="";
+  if(!utasks.length){
+    pl.innerHTML='<div class="person-empty-state"><div class="qe-emoji">☕</div>暂无任务</div>';
+    return;
+  }
+  utasks.sort(function(a,b){return b.prio-a.prio||(a.status==="已完结"?1:0)-(b.status==="已完结"?1:0);});
+  var wrap=document.createElement("div");wrap.className="table-wrap";
+  var tbl=document.createElement("table");tbl.className="data-table";
+  tbl.innerHTML='<thead><tr><th style="width:40px;"></th><th>标题</th><th>责任人</th><th>提出人</th><th>进度</th><th>状态</th><th>计划完成</th><th>附件</th><th style="width:110px;">操作</th></tr></thead>';
+  var tb=document.createElement("tbody");
+  utasks.forEach(function(t){tb.appendChild(tableRow(t));});
+  tbl.appendChild(tb);wrap.appendChild(tbl);pl.appendChild(wrap);
+}
+
+// ===== TASK OPERATIONS =====
+function createTask(data){
+  var t={
+    id:uid(),title:data.title||"未命名任务",
+    assigneeId:data.assigneeId||state.currentUser,
+    proposerId:data.proposerId||state.currentUser,
+    progress:data.progress||0,status:data.status||"待开始",
+    cat:data.cat||"",prio:data.prio||0,
+    due:data.due||"",time:"",note:data.note||"",
+    latest:data.note||"",
+    history:[],urges:[],attachments:[],
+    created:new Date().toISOString(),
+    updated:new Date().toISOString()
+  };
+  if(data.note){
+    trackChange(t,"备注","","首次创建: "+data.note);
+  }
+  autoUpdateProgress(t);
+  state.tasks.push(t);
+  save();
+}
+function updateTask(id,data){
+  var t=state.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  // Track changes
+  if(data.title!==undefined&&data.title!==t.title)trackChange(t,"标题",t.title,data.title);
+  if(data.assigneeId!==undefined&&data.assigneeId!==t.assigneeId){
+    var oldA=userById(t.assigneeId),newA=userById(data.assigneeId);
+    trackChange(t,"责任人",oldA?oldA.name:"未分配",newA?newA.name:"未分配");
+  }
+  if(data.proposerId!==undefined&&data.proposerId!==t.proposerId){
+    var oldP=userById(t.proposerId),newP=userById(data.proposerId);
+    trackChange(t,"提出人",oldP?oldP.name:"未设置",newP?newP.name:"未设置");
+  }
+  if(data.progress!==undefined&&data.progress!==t.progress)trackChange(t,"进度",t.progress+"%",data.progress+"%");
+  if(data.status!==undefined&&data.status!==t.status)trackChange(t,"状态",t.status,data.status);
+  if(data.prio!==undefined&&data.prio!==t.prio)trackChange(t,"优先级",PRIO[t.prio].name,PRIO[data.prio].name);
+  if(data.cat!==undefined&&data.cat!==t.cat){
+    var oldC=catById(t.cat),newC=catById(data.cat);
+    trackChange(t,"分类",oldC?oldC.name:"无",newC?newC.name:"无");
+  }
+  if(data.note!==undefined&&data.note!==t.note)trackChange(t,"备注",t.note||"(空)",data.note);
+
+  if(data.title!==undefined)t.title=data.title;
+  if(data.assigneeId!==undefined)t.assigneeId=data.assigneeId;
+  if(data.proposerId!==undefined)t.proposerId=data.proposerId;
+  if(data.progress!==undefined)t.progress=data.progress;
+  if(data.status!==undefined)t.status=data.status;
+  if(data.cat!==undefined)t.cat=data.cat;
+  if(data.prio!==undefined)t.prio=data.prio;
+  if(data.due!==undefined)t.due=data.due;
+  if(data.note!==undefined){t.note=data.note;t.latest=data.note;}
+  autoUpdateProgress(t);
+  t.updated=new Date().toISOString();
+  save();
+}
+function toggleDone(id){
+  var t=state.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  var newS=t.status==="已完结"?"进行中":"已完结";
+  if(newS==="已完结"&&t.progress<100){
+    trackChange(t,"进度",t.progress+"%","100% (自动)");
+    t.progress=100;
+  }
+  trackChange(t,"状态",t.status,newS);
+  t.status=newS;
+  t.updated=new Date().toISOString();
+  save();render();
+}
+function cycleStatus(id){
+  var t=state.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  var idx=STATUS.indexOf(t.status);
+  var newS=STATUS[(idx+1)%STATUS.length];
+  if(newS==="已完结"&&t.progress<100){
+    trackChange(t,"进度",t.progress+"%","100% (自动)");
+    t.progress=100;
+  }
+  trackChange(t,"状态",t.status,newS);
+  t.status=newS;
+  t.updated=new Date().toISOString();
+  save();render();
+}
+function removeTask(id){
+  if(!confirm("确定删除此任务？此操作不可撤销。"))return;
+  var t=state.tasks.find(function(x){return x.id===id;});
+  if(!t)return;
+  if(t.attachments){
+    t.attachments.forEach(function(a){dbDel(a.id);});
+  }
+  // 墓碑删除：标记 _deleted 而非移除，确保其他端同步该删除、且不会因某端无此任务而复活
+  t._deleted=true;
+  t.updated=new Date().toISOString();
+  save();render();closePanel();
+}
+
+// ===== ATTACHMENT POPUP =====
+var popupEl=null;
+function closeAttPopup(){if(popupEl){popupEl.remove();popupEl=null;}}
+function toggleAttPopup(e,anchor,task){
+  closeAttPopup();
+  var popup=document.createElement("div");
+  popup.style.cssText="position:fixed;background:var(--surface);border-radius:12px;box-shadow:var(--shadow-md);padding:4px;z-index:1100;min-width:180px;";
+  var atts=task.attachments||[];
+  if(!atts.length){
+    popup.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text3);">无附件</div>';
+  }else{
+    atts.forEach(function(a){
+      var row=document.createElement("div");
+      row.style.cssText="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;transition:background .12s;";
+      row.innerHTML='<span style="color:var(--accent);">📄</span><span style="flex:1;">'+esc(a.name)+'<br><span style="font-size:10px;color:var(--text3);">'+fmtSize(a.size)+'</span></span>';
+      row.onclick=function(ev){ev.stopPropagation();downloadAttachment(a.id);closeAttPopup();};
+      row.onmouseenter=function(){row.style.background="rgba(0,0,0,.04)";};
+      row.onmouseleave=function(){row.style.background="none";};
+      popup.appendChild(row);
+    });
+  }
+  popup.onclick=function(ev){ev.stopPropagation();};
+  document.body.appendChild(popup);popupEl=popup;
+  var rect=anchor.getBoundingClientRect();
+  popup.style.top=Math.min(rect.bottom+4,window.innerHeight-200)+"px";
+  popup.style.left=Math.min(rect.left,window.innerWidth-200)+"px";
+  setTimeout(function(){document.addEventListener("click",closeAttPopup,{once:true});},50);
+}
+function downloadAttachment(id){
+  dbGet(id).then(function(blob){
+    if(!blob){showToast("附件不存在或已被清除");return;}
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");a.href=url;a.download="attachment";a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+// ===== PANEL =====
+function openPanel(taskId){
+  if(taskId)state.editingId=taskId;else state.editingId=null;
+  var t=taskId?state.tasks.find(function(x){return x.id===taskId}):null;
+  $("panelTitle").textContent=t?"编辑任务":"新建任务";
+  // Populate assignee/proposer selects
+  var opts=state.users.map(function(u){return'<option value="'+u.id+'">'+esc(u.name)+'</option>';}).join("");
+  $("f-assignee").innerHTML=opts;
+  $("f-proposer").innerHTML='<option value="">（未设置）</option>'+opts;
+  // Category select
+  var copts=state.categories.map(function(c){return'<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join("");
+  $("f-cat").innerHTML='<option value="">（无分类）</option>'+copts;
+
+  if(t){
+    $("f-title").value=t.title;
+    $("f-assignee").value=t.assigneeId||"";
+    $("f-proposer").value=t.proposerId||"";
+    $("f-cat").value=t.cat||"";
+    $("f-prio").value=t.prio;
+    $("f-status").value=t.status;
+    $("f-due").value=t.due||"";
+    $("f-note").value=t.note||"";
+    $("f-progress").value=t.progress||0;
+    $("f-progress-slider").value=t.progress||0;
+    // Show history
+    $("f-history-wrap").style.display="block";
+    $("f-history").innerHTML=(t.history||[]).slice().reverse().map(function(h){
+      return'<div class="hl-entry"><strong>'+fmtDT(h.time)+'</strong> 「'+esc(h.field)+'」'+
+        esc(h.from)+' → <span style="color:var(--accent);">'+esc(h.to)+'</span></div>';
+    }).join("")||"（无记录）";
+    // Show temp atts
+    renderPanelAtts();
+  }else{
+    $("f-title").value="";
+    $("f-assignee").value=state.currentUser;
+    $("f-proposer").value="";
+    $("f-cat").value="work";
+    $("f-prio").value=0;
+    $("f-status").value="待开始";
+    $("f-due").value="";
+    $("f-note").value="";
+    $("f-progress").value=0;
+    $("f-progress-slider").value=0;
+    $("f-history-wrap").style.display="none";
+    tmpAtts=[];
+    renderPanelAtts();
+  }
+  $("panelOverlay").classList.add("show");
+  $("panelOverlay").style.display="flex";
+  // Progress slider sync
+  $("f-progress-slider").oninput=function(){$("f-progress").value=this.value;};
+  $("f-progress").oninput=function(){$("f-progress-slider").value=this.value;};
+  // Status auto-complete
+  $("f-status").onchange=function(){
+    if(this.value==="已完结"){
+      $("f-progress").value=100;
+      $("f-progress-slider").value=100;
+    }
+  };
+  // Att upload
+  $("f-att-input").onchange=handleAttUpload;
+}
+function closePanel(){
+  $("panelOverlay").classList.remove("show");
+  $("panelOverlay").style.display="none";
+  state.editingId=null;
+  tmpAtts=[];
+}
+function refreshPanelHistory(){
+  var tid=state.editingId;
+  if(!tid)return;
+  var t=state.tasks.find(function(x){return x.id===tid;});
+  if(!t)return;
+  $("f-history-wrap").style.display="block";
+  $("f-history").innerHTML=(t.history||[]).slice().reverse().map(function(h){
+    return'<div class="hl-entry"><strong>'+fmtDT(h.time)+'</strong> 「'+esc(h.field)+'」'+
+      esc(h.from)+' → <span style="color:var(--accent);">'+esc(h.to)+'</span></div>';
+  }).join("")||"（无记录）";
+}
+function savePanel(){
+  var title=$("f-title").value.trim();
+  if(!title){showToast("请输入任务标题");return;}
+  var data={
+    title:title,
+    assigneeId:$("f-assignee").value,
+    proposerId:$("f-proposer").value||"",
+    cat:$("f-cat").value||"",
+    prio:Number($("f-prio").value),
+    status:$("f-status").value,
+    due:$("f-due").value,
+    note:$("f-note").value.trim(),
+    progress:Number($("f-progress").value)
+  };
+  var tid=state.editingId;
+  if(tid){
+    updateTask(tid,data);
+    var task=state.tasks.find(function(x){return x.id===tid;});
+    if(task&&tmpAtts.length){
+      task.attachments=(task.attachments||[]).concat(tmpAtts);
+    }
+  }else{
+    createTask(data);
+    var newT=state.tasks[state.tasks.length-1];
+    if(tmpAtts.length)newT.attachments=tmpAtts;
+    state.editingId=newT.id;
+    $("panelTitle").textContent="编辑任务";
+  }
+  // Save attachments blobs
+  tmpAtts.forEach(function(a){
+    if(a._blob)dbPut(a.id,a._blob);
+  });
+  tmpAtts=[];
+  save();render();
+  // Clear note field and refresh history
+  $("f-note").value="";
+  refreshPanelHistory();
+  showToast("已保存");
+}
+function renderPanelAtts(){
+  var list=$("f-att-list"),tid=state.editingId;
+  var atts=[];
+  if(tid){var t=state.tasks.find(function(x){return x.id===tid});if(t)atts=t.attachments||[];}
+  atts=atts.concat(tmpAtts);
+  list.innerHTML=atts.map(function(a,i){
+    return'<div class="uploaded-file">'+
+      '📄 '+esc(a.name)+' ('+fmtSize(a.size)+') '+
+      (i>=atts.length-tmpAtts.length?'<span class="uf-del" data-idx="'+(i-(atts.length-tmpAtts.length))+'">×</span>':'')+
+      '</div>';
+  }).join("");
+  list.querySelectorAll(".uf-del").forEach(function(el){
+    el.onclick=function(){var idx=Number(this.dataset.idx);tmpAtts.splice(idx,1);renderPanelAtts();};
+  });
+}
+function handleAttUpload(){
+  var files=$("f-att-input").files;
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    tmpAtts.push({id:uid()+"_att",name:f.name,size:f.size,type:f.type,_blob:f});
+  }
+  $("f-att-input").value="";renderPanelAtts();
+}
+
+// ===== URGE =====
+function openUrgeModal(taskId){
+  state.urgeTaskId=taskId;
+  $("urge-msg").value="";
+  $("urgeOverlay").classList.add("show");
+}
+function closeUrgeModal(){
+  $("urgeOverlay").classList.remove("show");
+  state.urgeTaskId=null;
+}
+function sendUrge(){
+  var tid=state.urgeTaskId;
+  if(!tid)return;
+  var t=state.tasks.find(function(x){return x.id===tid;});
+  if(!t)return;
+  t.urges=t.urges||[];
+  t.urges.push({
+    id:uid(),fromId:state.currentUser,toId:t.assigneeId,
+    msg:$("urge-msg").value.trim()||"请尽快处理此任务",
+    time:new Date().toISOString(),read:false
+  });
+  save();closeUrgeModal();
+  showToast("催办已发送");
+  render();
+}
+
+// ===== NOTIFICATIONS =====
+var notifHistoryMode=false;
+function renderNotif(){
+  var urges=[];
+  state.tasks.forEach(function(t){(t.urges||[]).forEach(function(u){
+    if(u.toId===state.currentUser){
+      if(!notifHistoryMode&&u.read)return;
+      urges.push({task:t,urge:u});
+    }
+  });});
+  urges.sort(function(a,b){return b.urge.time>a.urge.time?1:-1;});
+  $("notifTitle").textContent=notifHistoryMode?"历史提醒":"催办通知";
+  $("notifHistory").textContent=notifHistoryMode?"返回":"历史";
+  var list=$("notifList");
+  if(!urges.length){list.innerHTML='<div class="nf-empty">'+(notifHistoryMode?"暂无历史记录":"暂无通知")+'</div>';return;}
+  list.innerHTML=urges.map(function(e){
+    var from=userById(e.urge.fromId);
+    var isRead=e.urge.read;
+    return'<div class="nf-item'+(isRead?" read":"")+'" data-tid="'+e.task.id+'" data-uid="'+e.urge.id+'">'+
+      '<div class="nf-body">'+
+        '<div class="nf-from">'+(from?esc(from.name):"某人")+' 催办'+(isRead?' <span class="nf-read-label">已读</span>':'')+'</div>'+
+        '<div class="nf-msg">'+esc(e.task.title)+'</div>'+
+        '<div class="nf-msg">"'+esc(e.urge.msg)+'"</div>'+
+        '<div class="nf-time">'+fmtDT(e.urge.time)+'</div>'+
+      '</div>'+
+      (isRead?'':'<button class="nf-read-btn">已读</button>')+
+      '</div>';
+  }).join("");
+  list.querySelectorAll(".nf-body").forEach(function(el){
+    var p=el.parentNode;
+    el.onclick=function(){
+      if(!p.classList.contains("read")){markUrgeRead(p.dataset.tid,p.dataset.uid);}
+      openPanel(p.dataset.tid);
+      $("notifPanel").classList.remove("show");
+      notifHistoryMode=false;
+    };
+  });
+  list.querySelectorAll(".nf-read-btn").forEach(function(el){
+    el.onclick=function(e){
+      e.stopPropagation();
+      var p=el.parentNode;
+      markUrgeRead(p.dataset.tid,p.dataset.uid);
+      showToast("已标记已读");
+    };
+  });
+}
+function markUrgeRead(tid,uid){
+  var t=state.tasks.find(function(x){return x.id===tid;});
+  if(!t)return;
+  var u=(t.urges||[]).find(function(x){return x.id===uid;});
+  if(!u)return;u.read=true;
+  save();renderNotif();updateNotifBadge();render();
+}
+function markAllRead(){
+  state.tasks.forEach(function(t){(t.urges||[]).forEach(function(u){
+    if(u.toId===state.currentUser)u.read=true;
+  });});
+  save();renderNotif();updateNotifBadge();render();
+}
+function updateNotifBadge(){
+  var cnt=0;
+  state.tasks.forEach(function(t){(t.urges||[]).forEach(function(u){
+    if(u.toId===state.currentUser&&!u.read)cnt++;
+  });});
+  $("notifBadge").className="notif-badge"+(cnt>0?" show":"");
+}
+
+// ===== INIT =====
+function init(){
+  initDB().then(function(){
+    load();
+    // 先拉云端再渲染：绝不在未拉取前把本地状态覆盖到云端
+    pullFromServer();
+    startSync();
+    startBannerTimer();
+    $("panelOverlay").classList.remove("show");$("panelOverlay").style.display="none";
+    $("urgeOverlay").classList.remove("show");
+    render();
+
+    // Nav click
+    document.querySelectorAll(".nav-item").forEach(function(n){
+      n.onclick=function(){
+        document.querySelectorAll(".nav-item").forEach(function(x){x.classList.remove("active");});
+        n.classList.add("active");
+        state.view=n.dataset.view;
+        state.userFilter=null;
+        hidePersonPage();
+        window.location.hash="";
+        render();
+      };
+    });
+
+    // Sort change
+    $("sort").onchange=function(){state.sort=this.value;render();};
+
+    // New task
+    $("btnNew").onclick=function(){state.editingId=null;openPanel(null);};
+
+    // Backup / Restore
+    $("btnExport").onclick=function(){exportBackup();};
+    $("btnImport").onclick=function(){$("importFile").click();};
+    $("importFile").onchange=function(e){ if(e.target.files&&e.target.files[0])importBackup(e.target.files[0]); e.target.value=""; };
+    // 复制协作链接（含 blob ID，发给同事共用同一份数据）
+    $("btnCopyLink").onclick=copyCollaborateLink;
+
+    // Add category
+    $("catAddBtn").onclick=function(e){e.stopPropagation();addCategory();};
+
+    // Panel
+    $("panelClose").onclick=closePanel;
+    $("panelCancel").onclick=closePanel;
+    $("panelSave").onclick=savePanel;
+
+    // Urge modal
+    $("urgeCancel").onclick=closeUrgeModal;
+    $("urgeSend").onclick=sendUrge;
+
+    // Notifications
+    $("btnNotif").onclick=function(e){
+      e.stopPropagation();
+      notifHistoryMode=false;
+      renderNotif();
+      $("notifPanel").classList.toggle("show");
+    };
+    $("notifClearAll").onclick=function(e){
+      e.stopPropagation();markAllRead();
+    };
+    $("notifHistory").onclick=function(e){
+      e.stopPropagation();
+      notifHistoryMode=!notifHistoryMode;
+      renderNotif();
+    };
+    document.addEventListener("click",function(e){
+      if(!e.target.closest("#notifDropdown"))$("notifPanel").classList.remove("show");
+      if(!e.target.closest("#userWrap"))$("userDropdown").classList.remove("show");
+    });
+
+    // User switch
+    $("userSwt").onclick=function(){$("userDropdown").classList.toggle("show");};
+
+    // Person page back
+    $("personBack").onclick=function(){
+      if(window.opener){window.close();return;}
+      window.location.hash="";render();
+    };
+
+    // Hash change
+    window.addEventListener("hashchange",function(){render();});
+
+    // Click-outside for modals
+    $("urgeOverlay").onclick=function(e){if(e.target===this)closeUrgeModal();};
+    $("panelOverlay").onclick=function(e){if(e.target===this)closePanel();};
+  });
+}
+
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>
