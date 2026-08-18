@@ -1218,7 +1218,8 @@ function renderQuadrant(box){
     if(!utasks.length){
       body.innerHTML='<div class="quad-empty-state"><div class="qe-emoji">☕</div>暂无任务，摸鱼中…</div>';
     }else{
-      var sorted=[].concat(utasks).sort(function(a,b){return b.prio-a.prio||(a.status==="已完结"?1:0)-(b.status==="已完结"?1:0);});
+      // 四宫格只展示未完结任务；已完结的只在「全部」和「已完结」标签页展示
+      var sorted=[].concat(active).sort(function(a,b){return b.prio-a.prio;});
       var shown=sorted.slice(0,QUAD_MAX);
       hidden=sorted.slice(QUAD_MAX);
 
