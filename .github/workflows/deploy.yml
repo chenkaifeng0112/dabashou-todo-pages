@@ -17,7 +17,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Inject Gist token from Secrets
-        run: sed -i 's/__GIST_TOKEN__/${{ secrets.GIST_TOKEN }}/g' index.html
+        run: |
+          python3 -c "
+import os
+t=os.environ.get('GIST_TOKEN','')
+with open('index.html','r') as f: c=f.read()
+c=c.replace('__GIST_TOKEN__',t)
+with open('index.html','w') as f: f.write(c)
+print('injected',len(t),'chars')
+"
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
